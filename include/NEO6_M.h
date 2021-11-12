@@ -22,8 +22,8 @@ typedef struct {
 } GPSData ;
 
 void hello();
-int sample_read(HANDLE hCom, int numMessages);
+char* dataRead(HANDLE hCom, int numMessages);
 HANDLE setup();
 void finish(HANDLE hCom);
 GPSData getData(HANDLE hCom);
-//int fakeRead();
+void writeFakeData(HANDLE hCom);

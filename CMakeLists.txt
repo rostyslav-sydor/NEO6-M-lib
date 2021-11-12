@@ -13,7 +13,7 @@ set(LIBRARY_OUTPUT_DIRECTORY bin/)
 
 add_library(NEO6_M SHARED src/NEO6_M.c ${headers})
 
-add_executable(main main.c ${headers})
+add_executable(main src/main.c ${headers})
 
 target_link_libraries(main NEO6_M serialport)
 target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
