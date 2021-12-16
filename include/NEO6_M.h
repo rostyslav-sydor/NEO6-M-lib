@@ -1,6 +1,7 @@
 #include "windows.h"
 #ifndef MAIN_NEO6_M_H
 #define MAIN_NEO6_M_H
+#include "stdint.h"
 
 typedef struct {
     double latitude, longitude;
@@ -17,59 +18,57 @@ typedef struct {
     double ageOfDiffCorr;
     double courseTrue, courseMagnetic;
     double speedKpH, speedKnots;
-} GPSData ;
+} NEOData ;
 
-void GPSMessageBuilder(int (*write)(void* buffer, size_t count), char* format, ...);
+void NEOMessageBuilder(int (*write)(void* buffer, size_t count), char* format, ...);
 
-void GPSSetSerialPort(int (*write)(void* buffer, size_t count),
+void NEOSetSerialPort(int (*write)(void* buffer, size_t count),
                       int protocol, // 0 - UBlox proprietary (not implemented), 1 - NMEA
                       int baudrate, // 9600 by default
                       int dataBits, // 8 by default
                       int stopBits, // 1 by default
                       int parity); // 0 - None, 1 - Odd, 2 - Even; 0 by default
 
-void GPSNavigationInit(int (*write)(void* buffer, size_t count),
+void NEONavigationInit(int (*write)(void* buffer, size_t count),
                        int x, int y, int z,
                        int clkOffset,
                        int timeOfWeek, int weekNo,
                        int channelCount,
                        int resetCfg);
 
-void GPSSetDGPSPort(int (*write)(void* buffer, size_t count),
+void NEOSetDNEOPort(int (*write)(void* buffer, size_t count),
                     int baudrate,
                     int dataBits,
                     int stopBits,
                     int parity);
 
-void GPSMessageQuery(int (*write)(void* buffer, size_t count),
+void NEOMessageQuery(int (*write)(void* buffer, size_t count),
                      int msg,
                      int checksumEnable);
 
-void GPSMessageRate(int (*write)(void* buffer, size_t count),
+void NEOMessageRate(int (*write)(void* buffer, size_t count),
                     int msg,
                     int rate,
                     int checksumEnable);
 
-void GPSLLANavigationInit(int (*write)(void* buffer, size_t count),
+void NEOLLANavigationInit(int (*write)(void* buffer, size_t count),
                           double latitude, double longitude, double altitude,
                           int clkOffset,
                           int timeOfWeek, int weekNo,
                           int channelCount,
                           int resetCfg);
 
-void GPSDebugMode(int (*write)(void* buffer, size_t count),
+void NEODebugMode(int (*write)(void* buffer, size_t count),
                   int mode);
 
-void GPSSelectDatum(int (*write)(void* buffer, size_t count),
+void NEOSelectDatum(int (*write)(void* buffer, size_t count),
                     int datum);
 
-GPSData GPSGetData(int (*read)(void* buffer, size_t count));
-char* GPSReadData(int (*read)(void* buffer, size_t count));
-void GPSPrintData(GPSData gpsdata);
+void NEOGetData(char* data, NEOData* gpsData);
 
-void GPSSendMessage(int (*write)(void* buffer, size_t count), char* msg, size_t length);
-int GPSChecksum(const char* msg, size_t length);
+void NEOPrintData(NEOData* gpsData);
 
-HANDLE winSetup();
+void NEOSendMessage(int (*write)(void* buffer, size_t count), uint8_t* msg, size_t length);
+
 
 #endif //MAIN_NEO6_M_H
