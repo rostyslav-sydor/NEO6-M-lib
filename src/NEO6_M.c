@@ -1,13 +1,13 @@
 #include "NEO6_M.h"
-#include "stdio.h"
-#include "string.h"
-#include "stdint.h"
+
+void NEOSetWriteCallback(int (*write)(uint8_t *buffer, int length)){
+    NEOWrite = write;
+}
 
 void NEOGetData(char* data, NEOData* gpsData){
     char* tmpData = strdup(data);
     int starPos = strchr(tmpData, '*') - tmpData;
     tmpData[starPos] = ',';
-    printf("%s\n\n",tmpData);
     char *values[30];
     int i = 0;
     char *value = malloc(0);
@@ -41,6 +41,8 @@ void NEOGetData(char* data, NEOData* gpsData){
         if(values[4]) gpsData->NS = *values[4];
         gpsData->longitude = atof(values[5]);
         if(values[6]) gpsData->EW = *values[6];
+        gpsData->speedKnots = atof(values[7]);
+        gpsData->courseMagnetic = atof(values[8]);
         gpsData->date = strtol(values[9], &errptr, 10);
         if(values[10]) gpsData->mode = *values[10];
     }
@@ -59,10 +61,17 @@ void NEOGetData(char* data, NEOData* gpsData){
     }
 
     else if(strstr(values[0], "GGA")){
+        gpsData->UTCTime = atof(values[1]);
+        gpsData->latitude = atof(values[2]);
+        if(values[3]) gpsData->NS = *values[3];
+        gpsData->longitude = atof(values[4]);
+        if(values[5]) gpsData->EW = *values[5];
         gpsData->positionFixIndicator = strtol(values[6], &errptr, 10);
+        gpsData->satellitesUsed = strtol(values[7], &errptr, 10);
+        gpsData->HDOP = atof(values[8]);
         gpsData->MSLAltitude = atof(values[9]);
-        gpsData->geoidSeparation = atof(values[11]);
-        gpsData->ageOfDiffCorr = strtol(values[6], &errptr, 10);
+        gpsData->geoidSeparation = atof(values[10]);
+        gpsData->DGPSStationID = strtol(values[11], &errptr, 10);
     }
 
     else if(strstr(values[0], "GSA")){
@@ -73,58 +82,17 @@ void NEOGetData(char* data, NEOData* gpsData){
 
     else if(strstr(values[0], "VTG")){
         gpsData->courseTrue = atof(values[1]);
-        gpsData->courseMagnetic = atof(values[3]);
-        gpsData->speedKnots = atof(values[5]);
-        gpsData->speedKpH = atof(values[7]);
+        gpsData->courseMagnetic = atof(values[2]);
+        gpsData->speedKnots = atof(values[3]);
+        gpsData->speedKpH = atof(values[4]);
+        if(values[5])gpsData->mode = *values[5];
     }
 }
 
-void NEOMessageBuilder(int (*write)(void* buffer, size_t count), char* format, ...){
-    int maxLen = 80;
-    char* msg = malloc(maxLen);
-    va_list args;
-    va_start(args, format);
-    int length = vsnprintf(msg, maxLen, format, args);
-    NEOSendMessage(write, msg, (size_t) length);
-    free(msg);
-}
 
-void NEOSetSerialPort(int (*write)(void* buffer, size_t count), int protocol, int baudrate,
-                      int dataBits, int stopBits, int parity){
-    NEOMessageBuilder(write, "PSRF100,%i,%i,%i,%i,%i", 0, baudrate, dataBits, stopBits, parity);
-
-}
-
-void NEONavigationInit(int (*write)(void* buffer, size_t count), int x, int y, int z,
-                       int clkOffset, int timeOfWeek, int weekNo, int channelCount, int resetCfg){
-    NEOMessageBuilder(write, "PSRF101,%i,%i,%i,%i,%i,%i,%i,%i", x, y, z, clkOffset, timeOfWeek, weekNo, channelCount, resetCfg);
-}
-
-void NEOSetDNEOPort(int (*write)(void* buffer, size_t count),int baudrate,
-                    int dataBits, int stopBits, int parity){
-    NEOMessageBuilder(write, "PSRF102,%i,%i,%i,%i", baudrate, dataBits, stopBits, parity);
-}
-
-void NEOMessageQuery(int (*write)(void* buffer, size_t count), int msg, int checksumEnable){
-    NEOMessageBuilder(write, "PSRF103,%02i,01,00,%02i", msg, checksumEnable);
-}
-
-void NEOMessageRate(int (*write)(void* buffer, size_t count), int msg, int rate, int checksumEnable){
-    NEOMessageBuilder(write, "PSRF103,%02i,00,%02i,1", msg, checksumEnable);
-}
-
-void NEOLLANavigationInit(int (*write)(void* buffer, size_t count), double latitude, double longitude, double altitude,
-                          int clkOffset, int timeOfWeek, int weekNo, int channelCount, int resetCfg){
-    NEOMessageBuilder(write, "PSRF104,%f,%f,%f,%i,%i,%i,%i,%i", latitude, longitude, altitude,
-                      clkOffset, timeOfWeek, weekNo, channelCount, resetCfg);
-}
-
-void NEODebugMode(int (*write)(void* buffer, size_t count), int mode){
-    NEOMessageBuilder(write, "PSRF105,%i", mode);
-}
-
-void NEOSelectDatum(int (*write)(void* buffer, size_t count), int datum){
-    NEOMessageBuilder(write, "PSRF106,%i", datum);
+void NEOMessageEnable(int msgClass, int msgId, int enable){
+    uint8_t msg[] = {0x06, 0x01, 0x03, 0x00, msgClass, msgId, enable};
+    NEOSendMessage(msg, 7);
 }
 
 void NEOPrintData(NEOData* gpsData){
@@ -136,18 +104,32 @@ void NEOPrintData(NEOData* gpsData){
            gpsData->courseTrue, gpsData->speedKpH);
 }
 
-void NEOSendMessage(int (*write)(void* buffer, size_t count), uint8_t* msg, size_t length){
+void NEOSendMessage(uint8_t* msg, int length){
     int decoratorLen = 4; // ub{msg}AB
     int i;
-    char* finalMsg;
-    int msgLen = sprintf(finalMsg, "µb%s00", msg);
+    uint8_t* finalMsg = malloc(length + decoratorLen);
+    int msgLen = length + decoratorLen;
 
-    for(i = 2; i < msgLen - 4; ++i){
+    // set ub sync chars
+    finalMsg[0] = 0xB5;
+    finalMsg[1] = 0x62;
+
+    // set checksum chars to 0
+    finalMsg[msgLen-2] = 0x00;
+    finalMsg[msgLen-1] = 0x00;
+
+    // calculate checksum
+    for(i = 2; i < msgLen-2; ++i){
+        finalMsg[i] = msg[i-2];
         finalMsg[msgLen-2] += finalMsg[i];
         finalMsg[msgLen-1] += finalMsg[msgLen-2];
     }
-    write(msg, msgLen);
+    char d;
+    for(i = 0; i < msgLen; ++i){
+        d = finalMsg[i];
+    }
+    NEOWrite(finalMsg, msgLen);
+//    free(msg);
     free(finalMsg);
     finalMsg = NULL;
 }
-
