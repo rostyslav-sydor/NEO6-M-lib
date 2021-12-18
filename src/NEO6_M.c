@@ -87,6 +87,14 @@ void NEOGetData(char* data, NEOData* gpsData){
         gpsData->speedKpH = atof(values[4]);
         if(values[5])gpsData->mode = *values[5];
     }
+    else if(strstr(values[0], "ZDA")){
+        gpsData->UTCTime = atof(values[1]);
+        gpsData->UTCDay = strtol(values[2], &errptr, 10);
+        gpsData->UTCMonth = strtol(values[3], &errptr, 10);
+        gpsData->UTCYear = strtol(values[4], &errptr, 10);
+        gpsData->localHours = strtol(values[5], &errptr, 10);
+        gpsData->localMinutes = strtol(values[7], &errptr, 10);
+    }
 }
 
 

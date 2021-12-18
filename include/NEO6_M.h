@@ -12,6 +12,8 @@ typedef struct {
     char NS, EW;
     char dataStatus, mode;
     int date;
+    int UTCDay, UTCMonth, UTCYear;
+    int localHours, localMinutes;
     double UTCTime;
     int satellitesUsed;
     int satelliteIDs[12];
