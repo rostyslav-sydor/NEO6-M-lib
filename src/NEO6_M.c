@@ -44,7 +44,7 @@ void NEOGetData(char* data, NEOData* gpsData){
         gpsData->speedKnots = atof(values[7]);
         gpsData->courseMagnetic = atof(values[8]);
         gpsData->date = strtol(values[9], &errptr, 10);
-        if(values[10]) gpsData->mode = *values[10];
+        if(values[12]) gpsData->mode = *values[12];
     }
 
     else if(strstr(values[0], "GSV")){
