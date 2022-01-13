@@ -19,7 +19,7 @@ typedef struct {
     int satelliteIDs[12];
     int elevations[12], azimuths[12], SNR[12];
     int positionFixIndicator;
-    float HDOP, PDOP, VDOP;
+    double HDOP, PDOP, VDOP;
     double MSLAltitude, geoidSeparation;
     double ageOfDiffCorr;
     double courseTrue, courseMagnetic;
@@ -27,6 +27,9 @@ typedef struct {
     int DGPSStationID;
 } NEOData ;
 
+typedef enum {
+    Eint, Edouble, Echar, Enull
+} Types;
 
 void NEOSetWriteCallback(int(*write)(uint8_t *buffer, int length));
 
