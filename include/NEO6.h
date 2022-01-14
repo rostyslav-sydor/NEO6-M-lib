@@ -1,11 +1,12 @@
-#ifndef MAIN_NEO6_M_H
-#define MAIN_NEO6_M_H
+#ifndef MAIN_NEO6_H
+#define MAIN_NEO6_H
+
 #include "string.h"
 #include "stdint.h"
 #include "stdlib.h"
 #include "stdio.h"
 
-int (*NEOWrite)(uint8_t *buffer, int length);
+//int (*NEOWrite)(uint8_t *buffer, int length);
 
 typedef struct {
     double latitude, longitude;
@@ -16,8 +17,8 @@ typedef struct {
     int localHours, localMinutes;
     double UTCTime;
     int satellitesUsed;
-    int satelliteIDs[12];
-    int elevations[12], azimuths[12], SNR[12];
+    int satelliteID[12];
+    int elevation[12], azimuth[12], SNR[12];
     int positionFixIndicator;
     double HDOP, PDOP, VDOP;
     double MSLAltitude, geoidSeparation;
@@ -31,18 +32,10 @@ typedef enum {
     Eint, Edouble, Echar, Enull
 } Types;
 
-void NEOSetWriteCallback(int(*write)(uint8_t *buffer, int length));
-
-
-void NEOMessageEnable(int msgClass,
-                    int msgID,
-                    int enable);
-
-void NEOGetData(char* data, NEOData* gpsData);
+void NEOParseData(const char* data, NEOData* gpsData);
 
 void NEOPrintData(NEOData* gpsData);
 
-void NEOSendMessage(uint8_t* msg, int length);
+void NEOSendMessage(const uint8_t* msg, int (NEOWrite)(uint8_t *buffer, int length));
 
-
-#endif //MAIN_NEO6_M_H
+#endif //MAIN_NEO6_H
