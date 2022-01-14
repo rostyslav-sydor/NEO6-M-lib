@@ -1,10 +1,6 @@
-#include "NEO6_M.h"
+#include "NEO6.h"
 
-void NEOSetWriteCallback(int (*write)(uint8_t *buffer, int length)){
-    NEOWrite = write;
-}
-
-void NEOGetData(char* data, NEOData* gpsData){
+void NEOParseData(const char* data, NEOData* gpsData){
 
     char* tmpData = strdup(data);
     int starPos = strchr(tmpData, '*') - tmpData;
@@ -63,14 +59,14 @@ void NEOGetData(char* data, NEOData* gpsData){
 
         void* tmpParameters[] = {&gpsData->satellitesUsed, &gpsData->satellitesUsed, // skip first 2 values
                                  &gpsData->satellitesUsed,
-                                 &gpsData->satelliteIDs[(msgNum-1)*4], &gpsData->elevations[(msgNum-1)*4],
-                                 &gpsData->azimuths[(msgNum-1)*4], &gpsData->SNR[(msgNum-1)*4],
-                                 &gpsData->satelliteIDs[(msgNum-1)*4+1], &gpsData->elevations[(msgNum-1)*4+1],
-                                 &gpsData->azimuths[(msgNum-1)*4+1], &gpsData->SNR[(msgNum-1)*4+1],
-                                 &gpsData->satelliteIDs[(msgNum-1)*4+2], &gpsData->elevations[(msgNum-1)*4+2],
-                                 &gpsData->azimuths[(msgNum-1)*4+2], &gpsData->SNR[(msgNum-1)*4+2],
-                                 &gpsData->satelliteIDs[(msgNum-1)*4+3], &gpsData->elevations[(msgNum-1)*4+3],
-                                 &gpsData->azimuths[(msgNum-1)*4+3], &gpsData->SNR[(msgNum-1)*4+3]};
+                                 &gpsData->satelliteID[(msgNum-1)*4], &gpsData->elevation[(msgNum-1)*4],
+                                 &gpsData->azimuth[(msgNum-1)*4], &gpsData->SNR[(msgNum-1)*4],
+                                 &gpsData->satelliteID[(msgNum-1)*4+1], &gpsData->elevation[(msgNum-1)*4+1],
+                                 &gpsData->azimuth[(msgNum-1)*4+1], &gpsData->SNR[(msgNum-1)*4+1],
+                                 &gpsData->satelliteID[(msgNum-1)*4+2], &gpsData->elevation[(msgNum-1)*4+2],
+                                 &gpsData->azimuth[(msgNum-1)*4+2], &gpsData->SNR[(msgNum-1)*4+2],
+                                 &gpsData->satelliteID[(msgNum-1)*4+3], &gpsData->elevation[(msgNum-1)*4+3],
+                                 &gpsData->azimuth[(msgNum-1)*4+3], &gpsData->SNR[(msgNum-1)*4+3]};
 
         Types tmpTypes[] = {Eint, Eint,
                             Eint,
@@ -107,12 +103,12 @@ void NEOGetData(char* data, NEOData* gpsData){
 
     else if(strstr(values[0], "GSA")){
         void* tmpParameters[] = {&gpsData->mode, &gpsData->positionFixIndicator,
-                                 &gpsData->satelliteIDs[0], &gpsData->satelliteIDs[1],
-                                 &gpsData->satelliteIDs[2], &gpsData->satelliteIDs[3],
-                                 &gpsData->satelliteIDs[4], &gpsData->satelliteIDs[5],
-                                 &gpsData->satelliteIDs[6], &gpsData->satelliteIDs[7],
-                                 &gpsData->satelliteIDs[8], &gpsData->satelliteIDs[9],
-                                 &gpsData->satelliteIDs[10], &gpsData->satelliteIDs[11],
+                                 &gpsData->satelliteID[0], &gpsData->satelliteID[1],
+                                 &gpsData->satelliteID[2], &gpsData->satelliteID[3],
+                                 &gpsData->satelliteID[4], &gpsData->satelliteID[5],
+                                 &gpsData->satelliteID[6], &gpsData->satelliteID[7],
+                                 &gpsData->satelliteID[8], &gpsData->satelliteID[9],
+                                 &gpsData->satelliteID[10], &gpsData->satelliteID[11],
                                  &gpsData->PDOP, &gpsData->HDOP, &gpsData->VDOP};
 
         Types tmpTypes[] = {Echar, Eint,
@@ -156,25 +152,25 @@ void NEOGetData(char* data, NEOData* gpsData){
         memcpy(types, tmpTypes, paramCount*sizeof(Types));
 
     }
-    
-    if(paramCount){
-        i = 0;
-        for(; i < paramCount; ++i){
+
+    i = 0;
+    for(; i < paramCount; ++i){
+        if(values[i+1]) {
             switch (types[i]) {
                 case Eint: {
-                    int tmp = strtol(values[i+1], &errptr, 10);
-                    memcpy(parameters[i],&tmp, sizeof(int));
+                    int tmp = strtol(values[i + 1], &errptr, 10);
+                    memcpy(parameters[i], &tmp, sizeof(int));
                     break;
                 }
 
                 case Edouble: {
-                    double tmp = atof(values[i+1]);
+                    double tmp = atof(values[i + 1]);
                     memcpy(parameters[i], &tmp, sizeof(double));
                     break;
                 }
 
                 case Echar: {
-                    char tmp = values[i+1][0];
+                    char tmp = values[i + 1][0];
                     memcpy(parameters[i], &tmp, 1);
                     break;
                 }
@@ -182,9 +178,8 @@ void NEOGetData(char* data, NEOData* gpsData){
                 default:
                     break;
             }
-
         }
-    } 
+    }
 }
 
 void NEOPrintData(NEOData* gpsData){
@@ -198,14 +193,10 @@ void NEOPrintData(NEOData* gpsData){
            gpsData->dataStatus);
 }
 
-void NEOMessageEnable(int msgClass, int msgId, int enable){
-    uint8_t msg[] = {0x06, 0x01, 0x03, 0x00, msgClass, msgId, enable};
-    NEOSendMessage(msg, 7);
-}
-
-void NEOSendMessage(uint8_t* msg, int length){
+void NEOSendMessage(const uint8_t* msg, int (NEOWrite)(uint8_t *buffer, int length)){
     int decoratorLen = 4; // ub{msg}AB
     int i;
+    int length = strlen(msg);
     uint8_t* finalMsg = malloc(length + decoratorLen);
     int msgLen = length + decoratorLen;
 
