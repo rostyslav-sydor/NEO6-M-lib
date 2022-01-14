@@ -20,7 +20,7 @@ Library for NEO6 GPS modules
 
 2Pass message without header and checksum into `NEOSendMessage` function.\
 Configuration messages can be found by this link: https://www.u-blox.com/sites/default/files/products/documents/u-blox6_ReceiverDescrProtSpec_%28GPS.G6-SW-10018%29_Public.pdf \
-    ``NEOSendMessage(msg, length, &Write);``
+    ``NEOSendMessage(msg, &Write);``
 
 
 # Example
@@ -39,7 +39,7 @@ int Write(uint8_t* buffer, int counter) {
 int main(){
     // disabling VTG message
     uint8_t msg[] = {0x06, 0x01, 0x03, 0x00, 0xF0, 0x05, 0x00}; 
-    NEOSendMessage(msg, strlen(msg), &Write);
+    NEOSendMessage(msg, &Write);
     
     // Example of parsing
     char* dataStr[] =  {"$GNRMC,202812.000,A,4949.0292,N,02401.5177,E,0.00,0.00,131221,,,A*73\n",
