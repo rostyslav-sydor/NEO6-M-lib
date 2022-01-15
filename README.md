@@ -19,7 +19,7 @@ Library for NEO6 GPS modules
 1. Create callback function with signature `int Write(uint8_t* msg, int length)`
 
 
-2Pass message without header and checksum into `NEOSendMessage` function.\
+2. Pass message without header and checksum into `NEOSendMessage` function.\
 Configuration messages can be found by this link: https://www.u-blox.com/sites/default/files/products/documents/u-blox6_ReceiverDescrProtSpec_%28GPS.G6-SW-10018%29_Public.pdf \
     ``NEOSendMessage(msg, &Write);``
 
