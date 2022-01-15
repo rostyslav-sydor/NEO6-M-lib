@@ -59,7 +59,7 @@ int main(){
     NEOData neoData = {0};
     int i = 0;
     for(;i < sizeof(dataStr)/sizeof(dataStr[0]); ++i){
-        NEOParseData(dataStr[i], &neoData);
+        NEOParseData(dataStr[i], &neoData, 1);
     }
     
     NEOPrintData(&neoData);
