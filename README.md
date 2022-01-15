@@ -7,8 +7,9 @@ Library for NEO6 GPS modules
     ``NEOData neodata = {0};``
 
 
-2. Pass data line by line to `NEOParseData` function. \
-    ``NEOParseData(dataStr, &neodata);``
+2. Pass data line by line to `NEOParseData` function. 
+    Last argument is enabling checking checksum of message and discarding it in case of failure. \
+    ``NEOParseData(dataStr, &neodata, 1);``
 
 
 3. Access data by accessing members of `NEOData` struct. \

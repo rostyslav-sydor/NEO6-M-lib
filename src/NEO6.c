@@ -1,6 +1,21 @@
 #include "NEO6.h"
 
-void NEOParseData(const char* data, NEOData* gpsData){
+void NEOParseData(const char* data, NEOData* gpsData, int checkChecksum){
+
+    if(checkChecksum){
+        int k = 1;
+        int end = strchr(data, '*') - data;
+        char actualChecksum = 0;
+        for(; k < end; ++k){
+            actualChecksum ^= data[k];
+        }
+
+        char* errptr;
+
+        char givenChecksumStr[] = {data[end+1], data[end+2]};
+        unsigned long givenChecksum = strtoul(givenChecksumStr, &errptr, 16);
+        if(givenChecksum != actualChecksum) return;
+    }
 
     char* tmpData = strdup(data);
     int starPos = strchr(tmpData, '*') - tmpData;

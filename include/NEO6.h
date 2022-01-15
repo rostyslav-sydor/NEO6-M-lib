@@ -32,7 +32,7 @@ typedef enum {
     Eint, Edouble, Echar, Enull
 } Types;
 
-void NEOParseData(const char* data, NEOData* gpsData);
+void NEOParseData(const char* data, NEOData* gpsData, int checkChecksum);
 
 void NEOPrintData(NEOData* gpsData);
 
